@@ -37,6 +37,10 @@ router.use(authCheck);
 
 router.post("/del-account", userControllers.delUser);
 router.post("/get-my-lists", userControllers.getMyLists);
+router.post("/create-list", userControllers.createList);
+router.post("/add-list", userControllers.addToList);
+router.post("/rem-list", userControllers.remToList);
+router.post("/get-list", userControllers.getList);
 
 router.post(
   "/new-pass",

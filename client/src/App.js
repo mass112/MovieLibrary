@@ -10,6 +10,7 @@ import Loader from "./components/UI/Loader";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import MyListPage from "./pages/MyListPage";
+import ListViewPage from "./pages/ListViewPage";
 
 const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
@@ -54,6 +55,7 @@ function App() {
             element={!token ? <Navigate to="/auth" /> : <Home />}
           />
           <Route path="/list" element={<MyListPage />} />
+          <Route path="/list/*" element={<ListViewPage />} />
           <Route
             path="/auth"
             element={!!token ? <Navigate to="/" /> : <Auth />}

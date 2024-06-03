@@ -1,18 +1,34 @@
 import React, { useEffect, useState } from "react";
 import { Box, Container } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { apiRoute } from "../../utils/APIRoutes";
+import { addToListRoute, apiRoute } from "../../utils/APIRoutes";
 import MovieCard from "./MovieCard";
 import classes from "./Dashboard.module.css";
 import DetailDailog from "./DetailDailog";
+import useHTTP from "../../hooks/use-http";
+import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
 
-function Dashboard() {
+const toastOptions = {
+  position: "top-center",
+  autoClose: 5000,
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: true,
+  draggable: true,
+  progress: undefined,
+  theme: "dark",
+};
+
+const Dashboard = () => {
   const navigate = useNavigate();
   const [movies, setMovies] = useState([]);
   const [searchTerm, setSearchTerm] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [openDetail, setOpenDetail] = useState(false);
   const [currentMovie, setCurrentMovie] = useState();
+  const { isLoading: getLoading, sendRequest: getSendRequest } = useHTTP();
+  const token = useSelector((state) => state.auth.token);
 
   const searchMovies = async (title) => {
     try {
@@ -29,6 +45,24 @@ function Dashboard() {
   useEffect(() => {
     // searchMovies("Batman");
   }, []);
+
+  const addToMyList = async (lis, movId) => {
+    try {
+      const responseData = await getSendRequest(
+        addToListRoute,
+        "POST",
+        JSON.stringify({ listId: lis, movieId: movId }),
+        {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        }
+      );
+      toast.success("Successfully added", toastOptions);
+      setOpenDetail(false);
+    } catch (err) {
+      toast.error(err.message, toastOptions);
+    }
+  };
 
   return (
     <>
@@ -115,10 +149,12 @@ function Dashboard() {
           open={openDetail}
           handleClose={() => setOpenDetail(false)}
           movieId={currentMovie}
+          actionFunction={addToMyList}
+          actionType="add"
         />
       )}
     </>
   );
-}
+};
 
 export default Dashboard;

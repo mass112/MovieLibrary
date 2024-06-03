@@ -54,8 +54,17 @@ const signUp = async (req, res, next) => {
     password: hashedPassword,
     moviesLists: [],
   });
-
   try {
+    await newUser.save();
+    const newList = new List({
+      name: "Default",
+      items: [],
+      owner: newUser,
+      image: "https://via.placeholder.com/400",
+      visibility: "public",
+    });
+    await newList.save();
+    newUser.moviesLists = [newList];
     await newUser.save();
   } catch (err) {
     return next(
@@ -160,6 +169,7 @@ const delUser = async (req, res, next) => {
   try {
     user = await User.findById(req.userData.userID);
   } catch (err) {
+    console.log(err);
     return next(
       new HttpError("Unable to Delete Account, please try again later.", 500)
     );
@@ -169,13 +179,10 @@ const delUser = async (req, res, next) => {
   }
 
   try {
-    await User.findByIdAndDelete(req.userData.userID, () => {}).clone();
-    await User.updateMany(
-      { friends: user.id },
-      { $pull: { friends: user.id } }
-    );
+    await User.findByIdAndDelete(req.userData.userID);
     res.status(200).json({ uid: req.userData.userID });
   } catch (err) {
+    console.log(err);
     return next(
       new HttpError("Unable to Delete Account, please try again later.", 500)
     );
@@ -350,11 +357,6 @@ const resetPassword = async (req, res, next) => {
 };
 
 const getMyLists = async (req, res, next) => {
-  // const errors = validationResult(req);
-  // if (!errors.isEmpty()) {
-  //   return next(new HttpError("Invalid User, please select another.", 422));
-  // }
-
   let user;
   try {
     user = await User.findById(req.userData.userID).populate("moviesLists");
@@ -370,6 +372,7 @@ const getMyLists = async (req, res, next) => {
   try {
     const list = user.moviesLists.map((i) => {
       return {
+        id: i.id,
         name: i.name,
         image: i.image,
         visibility: i.visibility,
@@ -382,6 +385,194 @@ const getMyLists = async (req, res, next) => {
   }
 };
 
+const createList = async (req, res, next) => {
+  let user;
+  try {
+    user = await User.findById(req.userData.userID).populate("moviesLists");
+  } catch (err) {
+    console.log(err);
+    return next(
+      new HttpError("Unable to create list, please try again later.", 500)
+    );
+  }
+  if (!user) {
+    return next(new HttpError("User not found", 404));
+  }
+
+  try {
+    const newList = new List({
+      name: req.body.name,
+      items: [],
+      owner: user,
+      image: "https://via.placeholder.com/400",
+      visibility: req.body.visibility,
+    });
+    await newList.save();
+    user.moviesLists = [...user.moviesLists, newList];
+    await user.save();
+    const list = user.moviesLists.map((i) => {
+      return {
+        id: i.id,
+        name: i.name,
+        image: i.image,
+        visibility: i.visibility,
+        movies: [...i.items],
+      };
+    });
+    res.status(200).json({ lists: [...list] });
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("Unable to create list, please try again.", 500));
+  }
+};
+
+const addToList = async (req, res, next) => {
+  let user;
+  try {
+    user = await User.findById(req.userData.userID);
+  } catch (err) {
+    console.log(err);
+    return next(
+      new HttpError("Unable to add to list, please try again later.", 500)
+    );
+  }
+  if (!user) {
+    return next(new HttpError("User not found", 404));
+  }
+  let list;
+  try {
+    list = await List.findById(req.body.listId);
+  } catch (err) {
+    console.log(err);
+    return next(
+      new HttpError("Unable to add to list, please try again later.", 500)
+    );
+  }
+  if (!list) {
+    return next(new HttpError("List not found", 404));
+  }
+
+  try {
+    list.items = [...list.items, req.body.movieId];
+    if (list.items.length === 1) {
+      const apiRes = await fetch(
+        `${process.env.API_ROUTE}&i=${req.body.movieId}`
+      );
+      const movData = await apiRes.json();
+      list.image = movData.Poster;
+    }
+    await list.save();
+    res.status(200).json({
+      list: {
+        id: list.id,
+        name: list.name,
+        image: list.image,
+        visibility: list.visibility,
+        movies: [...list.items],
+      },
+    });
+  } catch (err) {
+    return next(new HttpError("Unable to create list, please try again.", 500));
+  }
+};
+
+const remToList = async (req, res, next) => {
+  let user;
+  try {
+    user = await User.findById(req.userData.userID);
+  } catch (err) {
+    return next(
+      new HttpError("Unable to add to list, please try again later.", 500)
+    );
+  }
+  if (!user) {
+    return next(new HttpError("User not found", 404));
+  }
+  let list;
+  try {
+    list = await List.findById(req.body.listId);
+  } catch (err) {
+    return next(
+      new HttpError("Unable to add to list, please try again later.", 500)
+    );
+  }
+  if (!list) {
+    return next(new HttpError("List not found", 404));
+  }
+
+  try {
+    let index = -1;
+    list.items = list.items.filter((mov, i) => {
+      if (mov === req.body.movieId) index = i;
+      return mov !== req.body.movieId;
+    });
+    if (index === 0 && list.items.length !== 0) {
+      const apiRes = await fetch(`${process.env.API_ROUTE}&i=${list.items[0]}`);
+      const movData = await apiRes.json();
+      list.image = movData.Poster;
+    } else if (index === 0) {
+      list.image = "https://via.placeholder.com/400";
+    }
+    await list.save();
+    res.status(200).json({
+      list: {
+        id: list.id,
+        name: list.name,
+        image: list.image,
+        visibility: list.visibility,
+        movies: [...list.items],
+      },
+    });
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("Unable to create list, please try again.", 500));
+  }
+};
+
+const getList = async (req, res, next) => {
+  let user;
+  try {
+    user = await User.findById(req.userData.userID);
+  } catch (err) {
+    return next(
+      new HttpError("Unable to add to list, please try again later.", 500)
+    );
+  }
+  if (!user) {
+    return next(new HttpError("User not found", 404));
+  }
+  let list;
+  try {
+    list = await List.findById(req.body.listId);
+  } catch (err) {
+    return next(
+      new HttpError("Unable to add to list, please try again later.", 500)
+    );
+  }
+  if (!list) {
+    return next(new HttpError("List not found", 404));
+  }
+
+  try {
+    if (
+      list.visibility === "public" ||
+      (list.visibility === "private" && list.owner === user.id)
+    )
+      res.status(200).json({
+        list: {
+          id: list.id,
+          name: list.name,
+          image: list.image,
+          visibility: list.visibility,
+          movies: [...list.items],
+        },
+      });
+    else return next(new HttpError("Private List, Access Denied.", 404));
+  } catch (err) {
+    return next(new HttpError("Unable to create list, please try again.", 500));
+  }
+};
+
 exports.signUp = signUp;
 exports.login = login;
 exports.getUserNames = getUserNames;
@@ -391,3 +582,7 @@ exports.forgetPassword = forgetPassword;
 exports.verifyResetToken = verifyResetToken;
 exports.resetPassword = resetPassword;
 exports.getMyLists = getMyLists;
+exports.createList = createList;
+exports.addToList = addToList;
+exports.remToList = remToList;
+exports.getList = getList;

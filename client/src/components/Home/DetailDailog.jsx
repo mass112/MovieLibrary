@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@mui/material";
 import { apiRoute } from "../../utils/APIRoutes";
+import SelectDailog from "./SelectDailog";
 // const movie = {
 //   Title: "Guardians of the Galaxy Vol. 2",
 //   Year: "2017",
@@ -41,12 +42,18 @@ import { apiRoute } from "../../utils/APIRoutes";
 //   Website: "N/A",
 //   Response: "True",
 // };
-const DetailDailog = ({ open, handleClose, movieId }) => {
+const DetailDailog = ({
+  open,
+  handleClose,
+  movieId,
+  actionFunction,
+  actionType,
+}) => {
   const descriptionElementRef = useRef(null);
   const [movie, setMovie] = useState();
   const [isLoading, setIsLoading] = useState(false);
+  const [openSelect, setOpenSelect] = useState(false);
   useEffect(() => {
-    console.log(typeof movie);
     if (open) {
       const { current: descriptionElement } = descriptionElementRef;
       if (descriptionElement !== null) {
@@ -56,7 +63,6 @@ const DetailDailog = ({ open, handleClose, movieId }) => {
   }, [open]);
   useEffect(() => {
     const getMovie = async () => {
-      console.log("wertfh");
       try {
         setIsLoading(true);
         console.log(movieId);
@@ -71,130 +77,158 @@ const DetailDailog = ({ open, handleClose, movieId }) => {
     };
     getMovie();
   }, [movieId]);
+  const updateSelectedList = (lis) => {
+    actionFunction(lis, movieId);
+  };
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      scroll={"paper"}
-      aria-labelledby="scroll-dialog-title"
-      aria-describedby="scroll-dialog-description"
-    >
-      {isLoading || typeof movie === "undefined" || !movie.Type ? (
-        <>
-          <DialogTitle id="scroll-dialog-title">Details</DialogTitle>
-          <DialogContent dividers={true}>
-            <DialogContentText
-              id="scroll-dialog-description"
-              ref={descriptionElementRef}
-              tabIndex={-1}
-            >
-              <Typography>Loading...</Typography>
-            </DialogContentText>
-          </DialogContent>
-        </>
-      ) : (
-        <>
-          <DialogTitle id="scroll-dialog-title">
-            {movie.Type.toUpperCase()} DETAILS
-          </DialogTitle>
-          <DialogContent dividers={true}>
-            <img src={movie.Poster} alt={movie.Title} />
-            <DialogContentText
-              id="scroll-dialog-description"
-              ref={descriptionElementRef}
-              tabIndex={-1}
-            >
-              <Typography
-                component="h2"
-                variant="h5"
-                color="inherit"
-                noWrap
-                sx={{ flexGrow: 1 }}
+    <>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        scroll={"paper"}
+        aria-labelledby="scroll-dialog-title"
+        aria-describedby="scroll-dialog-description"
+      >
+        {isLoading || typeof movie === "undefined" || !movie.Type ? (
+          <>
+            <DialogTitle id="scroll-dialog-title">Details</DialogTitle>
+            <DialogContent dividers={true}>
+              <DialogContentText
+                id="scroll-dialog-description"
+                ref={descriptionElementRef}
+                tabIndex={-1}
               >
-                Name: {movie.Title}
-              </Typography>
-              <Typography
-                component="h3"
-                variant="h5"
-                color="inherit"
-                noWrap
-                sx={{ flexGrow: 1 }}
+                <Typography>Loading...</Typography>
+              </DialogContentText>
+            </DialogContent>
+          </>
+        ) : (
+          <>
+            <DialogTitle id="scroll-dialog-title">
+              {movie.Type.toUpperCase()} DETAILS
+            </DialogTitle>
+            <DialogContent dividers={true}>
+              <img src={movie.Poster} alt={movie.Title} />
+              <DialogContentText
+                id="scroll-dialog-description"
+                ref={descriptionElementRef}
+                tabIndex={-1}
               >
-                Released: {movie.Released}
-              </Typography>
-              <Typography
-                component="h3"
-                variant="h5"
-                color="inherit"
-                noWrap
-                sx={{ flexGrow: 1 }}
-              >
-                Genre: {movie.Genre}
-              </Typography>
-              <Typography
-                component="h3"
-                variant="h5"
-                color="inherit"
-                noWrap
-                sx={{ flexGrow: 1 }}
-              >
-                Director: {movie.Director}
-              </Typography>
-              <Typography
-                component="h3"
-                variant="h5"
-                color="inherit"
-                noWrap
-                sx={{ flexGrow: 1 }}
-              >
-                Actors: {movie.Actors}
-              </Typography>
-              <Typography
-                component="h3"
-                variant="h5"
-                color="inherit"
-                noWrap
-                sx={{ flexGrow: 1 }}
-              >
-                IMDB Rating: {movie.imdbRating}
-              </Typography>
-              <Typography
-                component="h3"
-                variant="h5"
-                color="inherit"
-                noWrap
-                sx={{ flexGrow: 1 }}
-              >
-                Language: {movie.Language}
-              </Typography>
-              <br />
-              <Typography
-                component="h2"
-                variant="h6"
-                color="inherit"
-                noWrap
-                sx={{ flexGrow: 1 }}
-              >
-                Plot:
-              </Typography>
-              <Typography
-                component="h4"
-                variant="h6"
-                color="inherit"
-                maxWidth="sm"
-                sx={{ flexGrow: 1 }}
-              >
-                {movie.Plot}
-              </Typography>
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClose}>Close</Button>
-            <Button onClick={handleClose}>Add to List</Button>
-          </DialogActions>
-        </>
+                <Typography
+                  component="h2"
+                  variant="h5"
+                  color="inherit"
+                  noWrap
+                  sx={{ flexGrow: 1 }}
+                >
+                  Name: {movie.Title}
+                </Typography>
+                <Typography
+                  component="h3"
+                  variant="h5"
+                  color="inherit"
+                  noWrap
+                  sx={{ flexGrow: 1 }}
+                >
+                  Released: {movie.Released}
+                </Typography>
+                <Typography
+                  component="h3"
+                  variant="h5"
+                  color="inherit"
+                  noWrap
+                  sx={{ flexGrow: 1 }}
+                >
+                  Genre: {movie.Genre}
+                </Typography>
+                <Typography
+                  component="h3"
+                  variant="h5"
+                  color="inherit"
+                  noWrap
+                  sx={{ flexGrow: 1 }}
+                >
+                  Director: {movie.Director}
+                </Typography>
+                <Typography
+                  component="h3"
+                  variant="h5"
+                  color="inherit"
+                  noWrap
+                  sx={{ flexGrow: 1 }}
+                >
+                  Actors: {movie.Actors}
+                </Typography>
+                <Typography
+                  component="h3"
+                  variant="h5"
+                  color="inherit"
+                  noWrap
+                  sx={{ flexGrow: 1 }}
+                >
+                  IMDB Rating: {movie.imdbRating}
+                </Typography>
+                <Typography
+                  component="h3"
+                  variant="h5"
+                  color="inherit"
+                  noWrap
+                  sx={{ flexGrow: 1 }}
+                >
+                  Language: {movie.Language}
+                </Typography>
+                <br />
+                <Typography
+                  component="h2"
+                  variant="h6"
+                  color="inherit"
+                  noWrap
+                  sx={{ flexGrow: 1 }}
+                >
+                  Plot:
+                </Typography>
+                <Typography
+                  component="h4"
+                  variant="h6"
+                  color="inherit"
+                  maxWidth="sm"
+                  sx={{ flexGrow: 1 }}
+                >
+                  {movie.Plot}
+                </Typography>
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleClose}>Close</Button>
+              {actionType === "add" ? (
+                <Button
+                  onClick={() => {
+                    setOpenSelect(true);
+                  }}
+                >
+                  Add to List
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    actionFunction(movieId);
+                  }}
+                >
+                  Remove From List
+                </Button>
+              )}
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+      {openSelect && (
+        <SelectDailog
+          open={openSelect}
+          handleClose={() => setOpenSelect(false)}
+          handleSave={updateSelectedList}
+        />
       )}
-    </Dialog>
+    </>
   );
 };
 
